@@ -29,6 +29,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
         <li><a href="links.php">Bağlantılar</a></li>
         <li><a href="memories.php">Anılar</a></li>
         <li><a href="games.php">Oyunlar</a></li>
+        <li><a href="polls.php">Anketler</a></li>
         <li><a href="profile.php?id=<?php echo $_SESSION['id']; ?>">Profilim</a></li>
         <li><a href="profile_edit.php">Profil Düzenle</a></li>
         <?php if (isset($_SESSION['ai_access']) && $_SESSION['ai_access'] == 1): ?>
