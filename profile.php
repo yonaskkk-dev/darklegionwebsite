@@ -11,19 +11,31 @@ $profile_id = null;
 $profile_url = null;
 $profile_username = null;
 $user_data = null;
+$sql = null;
+$type = null;
+$param1 = null;
+$param2 = null;
 
-// .htaccess yönlendirmesinden gelen username parametresini kontrol et
+// Profil bulma stratejisini belirle
 if (isset($_GET['username'])) {
+    // .htaccess yönlendirmesinden gelen username parametresini kontrol et
     $profile_username = $_GET['username'];
     // Kullanıcı adı veya profil URL'sine göre bul
     $sql = "SELECT * FROM users WHERE profile_url = ? OR username = ?";
     $param1 = $profile_username;
     $param2 = $profile_username;
     $type = "ss";
+} 
+elseif (isset($_GET['id'])) {
+    // ID'ye göre kullanıcı bul
+    $profile_id = (int)$_GET['id'];
+    $sql = "SELECT * FROM users WHERE id = ?";
+    $param1 = $profile_id;
+    $type = "i";
 }
-// URL kontrolü (örn: domain.com/username yada localhost/username)
-// NOT: Bu kısım .htaccess yoksa yedek olarak çalışacak
 else {
+    // URL kontrolü (örn: domain.com/username yada localhost/username)
+    // NOT: Bu kısım .htaccess yoksa yedek olarak çalışacak
     $request_uri = $_SERVER['REQUEST_URI'];
     
     // Otomatik olarak base path'i tespit et (localhost/proje veya domain.com gibi)
@@ -44,34 +56,39 @@ else {
             $param2 = $profile_url;
             $type = "ss";
         }
+        else {
+            // Hiçbir parametre yoksa varsayılan olarak giriş yapmış kullanıcının profilini göster
+            $profile_id = $current_user_id ?: null;
+            
+            if (!$profile_id) {
+                // ID yoksa ve giriş yapılmamışsa, giriş sayfasına yönlendir
+                header("Location: login.php");
+                exit;
+            }
+            
+            $sql = "SELECT * FROM users WHERE id = ?";
+            $param1 = $profile_id;
+            $type = "i";
+        }
     }
-}
-// id parametresi ile profili görüntüleme
-else if (isset($_GET['id'])) {
-    // ID'ye göre kullanıcı bul
-    $profile_id = (int)$_GET['id'];
-    $sql = "SELECT * FROM users WHERE id = ?";
-    $param1 = $profile_id;
-    $type = "i";
-}
-// Hiçbir parametre yoksa varsayılan olarak giriş yapmış kullanıcının profilini göster
-else {
-    // ID'ye göre kullanıcı bul (varsayılan: giriş yapmış kullanıcı)
-    $profile_id = $current_user_id ?: null;
-    
-    if (!$profile_id) {
-        // ID yoksa ve giriş yapılmamışsa, giriş sayfasına yönlendir
-        header("Location: login.php");
-        exit;
+    else {
+        // Hiçbir parametre yoksa varsayılan olarak giriş yapmış kullanıcının profilini göster
+        $profile_id = $current_user_id ?: null;
+        
+        if (!$profile_id) {
+            // ID yoksa ve giriş yapılmamışsa, giriş sayfasına yönlendir
+            header("Location: login.php");
+            exit;
+        }
+        
+        $sql = "SELECT * FROM users WHERE id = ?";
+        $param1 = $profile_id;
+        $type = "i";
     }
-    
-    $sql = "SELECT * FROM users WHERE id = ?";
-    $param1 = $profile_id;
-    $type = "i";
 }
 
 // Kullanıcı verilerini sorgula
-if ($stmt = mysqli_prepare($conn, $sql)) {
+if ($sql && $stmt = mysqli_prepare($conn, $sql)) {
     // Parametreleri bağla (tek veya çift parametre olabilir)
     if ($type == "ss") {
         mysqli_stmt_bind_param($stmt, $type, $param1, $param2);
@@ -246,8 +263,8 @@ include 'includes/header.php';
                             <span>📅 <?php echo $created_at; ?> tarihinde katıldı</span>
                             
                             <?php if (!empty($user_data['profile_url'])): ?>
-                            <span>🔗
-                                <?php
+                            <span>🔗 
+                                <?php 
                                 $site_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]";
                                 $base_url = dirname($_SERVER['SCRIPT_NAME']);
                                 $base_url = $base_url != '/' ? $base_url : '';
