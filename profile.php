@@ -11,16 +11,19 @@ $profile_id = null;
 $profile_url = null;
 $user_data = null;
 
-// URL kontrolü (örn: darklegion.com/username)
+// URL kontrolü (örn: domain.com/username yada localhost/username)
 $request_uri = $_SERVER['REQUEST_URI'];
-$base_path = '/'; // Web sitenizin kök dizinini ayarlayın
+
+// Otomatik olarak base path'i tespit et (localhost/proje veya domain.com gibi)
+$script_name = dirname($_SERVER['SCRIPT_NAME']);
+$base_path = $script_name != '/' ? $script_name . '/' : '/';
 
 if (strpos($request_uri, $base_path) === 0) {
     $path = substr($request_uri, strlen($base_path));
     $path = strtok($path, '?'); // Query string'i kaldır
     
-    // Root URL değilse ve '/' içermiyorsa (alt klasör olmadığından emin ol)
-    if ($path && $path != 'profile.php' && strpos($path, '/') === false) {
+    // Root URL değilse ve 'profile.php' değilse (doğrudan URL olabilir)
+    if ($path && $path != 'profile.php' && !in_array($path, ['index.php', 'login.php', 'register.php', 'dashboard.php', 'upload.php', 'gallery.php', 'tools.php', 'memories.php', 'ai_chat.php', 'ai_logs.php', 'event-calendar.php', 'announcements.php', 'links.php', 'profile_edit.php'])) {
         $profile_url = $path;
     }
 }
