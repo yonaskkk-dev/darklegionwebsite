@@ -287,4 +287,111 @@ AND NOT EXISTS (
 -- games/assets/        - Oyun görselleri için
 -- games/js/            - Oyun JavaScript dosyaları için
 
+-- Anket sistemi tabloları
+CREATE TABLE `polls` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `status` enum('active','ended','draft') NOT NULL DEFAULT 'active',
+  `allow_multiple` tinyint(1) NOT NULL DEFAULT 0,
+  `end_date` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `polls_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `poll_options` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `poll_id` int(11) NOT NULL,
+  `option_text` varchar(255) NOT NULL,
+  `option_order` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `poll_id` (`poll_id`),
+  CONSTRAINT `poll_options_ibfk_1` FOREIGN KEY (`poll_id`) REFERENCES `polls` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `poll_votes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `poll_id` int(11) NOT NULL,
+  `option_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `voted_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `poll_id` (`poll_id`),
+  KEY `option_id` (`option_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `poll_votes_ibfk_1` FOREIGN KEY (`poll_id`) REFERENCES `polls` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `poll_votes_ibfk_2` FOREIGN KEY (`option_id`) REFERENCES `poll_options` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `poll_votes_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `poll_comments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `poll_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `comment` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `poll_id` (`poll_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `poll_comments_ibfk_1` FOREIGN KEY (`poll_id`) REFERENCES `polls` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `poll_comments_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Örnek anket ekle (varsa ekleme)
+INSERT INTO `polls` (`user_id`, `title`, `description`, `status`, `allow_multiple`, `end_date`)
+SELECT 1, 'En sevdiğiniz programlama dili hangisi?', 'Yazılım geliştirirken tercih ettiğiniz programlama dilini seçin.', 'active', 0, DATE_ADD(NOW(), INTERVAL 30 DAY)
+FROM `users`
+WHERE `username` = 'admin'
+AND NOT EXISTS (SELECT 1 FROM `polls` WHERE `title` = 'En sevdiğiniz programlama dili hangisi?');
+
+-- Örnek anket seçenekleri ekle
+SET @poll_id = LAST_INSERT_ID();
+
+INSERT INTO `poll_options` (`poll_id`, `option_text`, `option_order`)
+SELECT @poll_id, 'PHP', 1
+WHERE @poll_id > 0 AND NOT EXISTS (
+    SELECT 1 FROM `poll_options`
+    WHERE `poll_id` = @poll_id AND `option_text` = 'PHP'
+);
+
+INSERT INTO `poll_options` (`poll_id`, `option_text`, `option_order`)
+SELECT @poll_id, 'JavaScript', 2
+WHERE @poll_id > 0 AND NOT EXISTS (
+    SELECT 1 FROM `poll_options`
+    WHERE `poll_id` = @poll_id AND `option_text` = 'JavaScript'
+);
+
+INSERT INTO `poll_options` (`poll_id`, `option_text`, `option_order`)
+SELECT @poll_id, 'Python', 3
+WHERE @poll_id > 0 AND NOT EXISTS (
+    SELECT 1 FROM `poll_options`
+    WHERE `poll_id` = @poll_id AND `option_text` = 'Python'
+);
+
+INSERT INTO `poll_options` (`poll_id`, `option_text`, `option_order`)
+SELECT @poll_id, 'Java', 4
+WHERE @poll_id > 0 AND NOT EXISTS (
+    SELECT 1 FROM `poll_options`
+    WHERE `poll_id` = @poll_id AND `option_text` = 'Java'
+);
+
+INSERT INTO `poll_options` (`poll_id`, `option_text`, `option_order`)
+SELECT @poll_id, 'C#', 5
+WHERE @poll_id > 0 AND NOT EXISTS (
+    SELECT 1 FROM `poll_options`
+    WHERE `poll_id` = @poll_id AND `option_text` = 'C#'
+);
+
+INSERT INTO `poll_options` (`poll_id`, `option_text`, `option_order`)
+SELECT @poll_id, 'Diğer', 6
+WHERE @poll_id > 0 AND NOT EXISTS (
+    SELECT 1 FROM `poll_options`
+    WHERE `poll_id` = @poll_id AND `option_text` = 'Diğer'
+);
+
 -- Kurulum tamamlandı
