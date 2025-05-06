@@ -6,37 +6,58 @@ require_once 'config.php';
 $loggedin = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
 $current_user_id = $loggedin ? $_SESSION['id'] : 0;
 
-// Profil ID veya URL'sini al
+// Profil ID, URL veya kullanıcı adını al
 $profile_id = null;
 $profile_url = null;
+$profile_username = null;
 $user_data = null;
 
+// .htaccess yönlendirmesinden gelen username parametresini kontrol et
+if (isset($_GET['username'])) {
+    $profile_username = $_GET['username'];
+    // Kullanıcı adı veya profil URL'sine göre bul
+    $sql = "SELECT * FROM users WHERE profile_url = ? OR username = ?";
+    $param1 = $profile_username;
+    $param2 = $profile_username;
+    $type = "ss";
+}
 // URL kontrolü (örn: domain.com/username yada localhost/username)
-$request_uri = $_SERVER['REQUEST_URI'];
-
-// Otomatik olarak base path'i tespit et (localhost/proje veya domain.com gibi)
-$script_name = dirname($_SERVER['SCRIPT_NAME']);
-$base_path = $script_name != '/' ? $script_name . '/' : '/';
-
-if (strpos($request_uri, $base_path) === 0) {
-    $path = substr($request_uri, strlen($base_path));
-    $path = strtok($path, '?'); // Query string'i kaldır
+// NOT: Bu kısım .htaccess yoksa yedek olarak çalışacak
+else {
+    $request_uri = $_SERVER['REQUEST_URI'];
     
-    // Root URL değilse ve 'profile.php' değilse (doğrudan URL olabilir)
-    if ($path && $path != 'profile.php' && !in_array($path, ['index.php', 'login.php', 'register.php', 'dashboard.php', 'upload.php', 'gallery.php', 'tools.php', 'memories.php', 'ai_chat.php', 'ai_logs.php', 'event-calendar.php', 'announcements.php', 'links.php', 'profile_edit.php'])) {
-        $profile_url = $path;
+    // Otomatik olarak base path'i tespit et (localhost/proje veya domain.com gibi)
+    $script_name = dirname($_SERVER['SCRIPT_NAME']);
+    $base_path = $script_name != '/' ? $script_name . '/' : '/';
+    
+    if (strpos($request_uri, $base_path) === 0) {
+        $path = substr($request_uri, strlen($base_path));
+        $path = strtok($path, '?'); // Query string'i kaldır
+        
+        // Root URL değilse ve bilinen sayfalardan biri değilse (doğrudan URL olabilir)
+        if ($path && $path != 'profile.php' && !in_array($path, ['index.php', 'login.php', 'register.php', 'dashboard.php', 'upload.php', 'gallery.php', 'tools.php', 'memories.php', 'ai_chat.php', 'ai_logs.php', 'event-calendar.php', 'announcements.php', 'links.php', 'profile_edit.php'])) {
+            $profile_url = $path;
+            
+            // Profil URL'sine göre kullanıcı bul
+            $sql = "SELECT * FROM users WHERE profile_url = ? OR username = ?";
+            $param1 = $profile_url;
+            $param2 = $profile_url;
+            $type = "ss";
+        }
     }
 }
-
-// URL veya GET parametresi ile profil sayfasını göster
-if ($profile_url) {
-    // Profil URL'sine göre kullanıcı bul
-    $sql = "SELECT * FROM users WHERE profile_url = ?";
-    $param = $profile_url;
-    $type = "s";
-} else {
+// id parametresi ile profili görüntüleme
+else if (isset($_GET['id'])) {
+    // ID'ye göre kullanıcı bul
+    $profile_id = (int)$_GET['id'];
+    $sql = "SELECT * FROM users WHERE id = ?";
+    $param1 = $profile_id;
+    $type = "i";
+}
+// Hiçbir parametre yoksa varsayılan olarak giriş yapmış kullanıcının profilini göster
+else {
     // ID'ye göre kullanıcı bul (varsayılan: giriş yapmış kullanıcı)
-    $profile_id = isset($_GET['id']) ? (int)$_GET['id'] : ($current_user_id ?: null);
+    $profile_id = $current_user_id ?: null;
     
     if (!$profile_id) {
         // ID yoksa ve giriş yapılmamışsa, giriş sayfasına yönlendir
@@ -45,13 +66,18 @@ if ($profile_url) {
     }
     
     $sql = "SELECT * FROM users WHERE id = ?";
-    $param = $profile_id;
+    $param1 = $profile_id;
     $type = "i";
 }
 
 // Kullanıcı verilerini sorgula
 if ($stmt = mysqli_prepare($conn, $sql)) {
-    mysqli_stmt_bind_param($stmt, $type, $param);
+    // Parametreleri bağla (tek veya çift parametre olabilir)
+    if ($type == "ss") {
+        mysqli_stmt_bind_param($stmt, $type, $param1, $param2);
+    } else {
+        mysqli_stmt_bind_param($stmt, $type, $param1);
+    }
     
     if (mysqli_stmt_execute($stmt)) {
         $result = mysqli_stmt_get_result($stmt);
@@ -220,7 +246,15 @@ include 'includes/header.php';
                             <span>📅 <?php echo $created_at; ?> tarihinde katıldı</span>
                             
                             <?php if (!empty($user_data['profile_url'])): ?>
-                            <span>🔗 <a href="/<?php echo htmlspecialchars($user_data['profile_url']); ?>">darklegion.com/<?php echo htmlspecialchars($user_data['profile_url']); ?></a></span>
+                            <span>🔗
+                                <?php
+                                $site_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]";
+                                $base_url = dirname($_SERVER['SCRIPT_NAME']);
+                                $base_url = $base_url != '/' ? $base_url : '';
+                                $profile_link = $site_url . $base_url . '/' . htmlspecialchars($user_data['profile_url']);
+                                ?>
+                                <a href="<?php echo $profile_link; ?>"><?php echo $profile_link; ?></a>
+                            </span>
                             <?php endif; ?>
                         </div>
                         

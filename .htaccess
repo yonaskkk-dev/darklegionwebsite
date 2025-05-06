@@ -1,0 +1,14 @@
+RewriteEngine On
+
+# Mevcut dosya veya dizin isteklerini normal işle
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# index.php, login.php gibi bilinen sayfaları doğrudan işle
+RewriteRule ^(index|login|register|dashboard|upload|gallery|tools|memories|ai_chat|ai_logs|event-calendar|announcements|links|profile|profile_edit)\.php$ - [L]
+
+# Olmayan dosya/dizin isteklerini profil URL'i olarak kabul et
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([a-zA-Z0-9_-]+)$ profile.php?username=$1 [L,QSA]
