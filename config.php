@@ -29,7 +29,19 @@ if (mysqli_query($conn, $sql)) {
         password_hash VARCHAR(255) NOT NULL,
         role ENUM('admin', 'uye', 'misafir') NOT NULL DEFAULT 'misafir',
         ai_access TINYINT(1) NOT NULL DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        profile_url VARCHAR(50) DEFAULT NULL UNIQUE,
+        avatar VARCHAR(255) DEFAULT NULL,
+        cover_image VARCHAR(255) DEFAULT NULL,
+        cover_video VARCHAR(255) DEFAULT NULL,
+        background_music VARCHAR(255) DEFAULT NULL,
+        bio TEXT DEFAULT NULL,
+        interests TEXT DEFAULT NULL,
+        location VARCHAR(100) DEFAULT NULL,
+        social_links TEXT DEFAULT NULL,
+        badges TEXT DEFAULT NULL,
+        profile_views INT(11) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )";
     mysqli_query($conn, $users_table);
     
