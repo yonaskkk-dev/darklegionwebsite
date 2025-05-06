@@ -1,0 +1,29 @@
+# IDE ve Editör dosyaları
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+
+# Hassas bilgiler
+# config.php'nin daha güvenli bir kopyası sunucuya yüklenebilir
+
+# Geçici dosyalar
+*.tmp
+*.log
+*.swp
+*.bak
+
+# Yüklenen dosyalar - boş dizinler oluşturulmalı ama içerik Github'a gitmemeli
+uploads/*
+uploads/gallery/*
+!uploads/.gitkeep
+!uploads/gallery/.gitkeep
+
+# Composer (gerekirse)
+/vendor/
+/composer.lock
+
+# Node (gerekirse)
+/node_modules/
+/package-lock.json
